@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
-	"github.com/queue-scheduler/pkg/fasthttp"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/SwirlGit/queue-scheduler/internal/qs-api/api/v1/schedule"
+	"github.com/SwirlGit/queue-scheduler/pkg/fasthttp"
 )
 
 func main() {
@@ -17,8 +19,10 @@ func main() {
 	defer cancel()
 
 	// TODO: init services
+	scheduleService := schedule.NewService()
+	scheduleHandler := schedule.NewHandler(scheduleService)
 
-	server := fasthttp.NewServer(nil)
+	server := fasthttp.NewServer([]fasthttp.RouteProvider{scheduleHandler})
 	go func() {
 		if err := server.Listen(":9000"); err != nil {
 			panic(err)

@@ -13,3 +13,4 @@ GRANT CONNECT ON DATABASE qs_db TO qs_api;
 
 GRANT USAGE ON TYPE public.STATE TO qs_api;
 GRANT INSERT ON TABLE public.jobs TO qs_api;
+GRANT INSERT, SELECT ON TABLE public.queues TO qs_api;

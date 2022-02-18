@@ -1,7 +1,7 @@
 CREATE TABLE public.jobs
 (
     id              BIGSERIAL PRIMARY KEY,
-    ref_query_id    BIGINT      NOT NULL,
+    ref_queue_id    BIGINT      NOT NULL,
     date_time       TIMESTAMPTZ NOT NULL,
     action          VARCHAR     NOT NULL,
     state           STATE       NOT NULL DEFAULT 'new':: STATE,

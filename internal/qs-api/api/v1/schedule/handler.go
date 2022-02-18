@@ -1,6 +1,7 @@
 package schedule
 
 import (
+	"context"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -8,7 +9,7 @@ import (
 )
 
 type scheduleService interface {
-	ScheduleJob(job Job) error
+	ScheduleJob(ctx context.Context, job Job) error
 }
 
 type Handler struct {
@@ -25,7 +26,7 @@ func (h *Handler) RegisterFastHTTPRouters(a fiber.Router) {
 
 type scheduleJobArgs struct {
 	Timestamp int64  `json:"timestamp"`
-	QueueID   int64  `json:"queue_id"`
+	QueueID   string `json:"queue_id"`
 	Action    string `json:"action"`
 }
 
@@ -42,9 +43,9 @@ func (h *Handler) scheduleJob(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "missing action field")
 	}
 
-	if err := h.scheduleService.ScheduleJob(Job{
+	if err := h.scheduleService.ScheduleJob(c.UserContext(), Job{
 		DateTime: time.Unix(args.Timestamp, 0),
-		QueryID:  args.QueueID,
+		QueueID:  args.QueueID,
 		Action:   args.Action,
 	}); err != nil {
 		return errors.Wrap(err, "schedule job")

@@ -6,9 +6,13 @@ import (
 	"os/signal"
 	"syscall"
 
+	pkgschedule "github.com/SwirlGit/queue-scheduler/internal/pkg/schedule"
 	"github.com/SwirlGit/queue-scheduler/internal/qs-api/api/v1/schedule"
+	"github.com/SwirlGit/queue-scheduler/pkg/database/postgres"
 	"github.com/SwirlGit/queue-scheduler/pkg/fasthttp"
 )
+
+const appName = "qs-api"
 
 func main() {
 	// TODO: init config
@@ -18,8 +22,13 @@ func main() {
 	_, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// TODO: init services
-	scheduleService := schedule.NewService()
+	qsDB, err := postgres.NewDB(&postgres.Config{}, appName)
+	if err != nil {
+		panic(err)
+	}
+
+	scheduleStorage := pkgschedule.NewStorage(qsDB.Pool())
+	scheduleService := schedule.NewService(scheduleStorage)
 	scheduleHandler := schedule.NewHandler(scheduleService)
 
 	server := fasthttp.NewServer([]fasthttp.RouteProvider{scheduleHandler})

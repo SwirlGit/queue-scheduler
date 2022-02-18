@@ -9,4 +9,3 @@ type Storage struct {
 func NewStorage(pool *pgxpool.Pool) *Storage {
 	return &Storage{pool: pool}
 }
-

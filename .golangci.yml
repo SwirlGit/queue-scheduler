@@ -1,0 +1,219 @@
+# Options for analysis running.
+run:
+  # The default concurrency value is the number of available CPU.
+  concurrency: 4
+  # Timeout for analysis, e.g. 30s, 5m.
+  # Default: 1m
+  timeout: 5m
+  # Exit code when at least one issue was found.
+  # Default: 1
+  issues-exit-code: 1
+  # Include test files or not.
+  # Default: true
+  tests: true
+  # Enables skipping of directories:
+  # - vendor$, third_party$, testdata$, examples$, Godeps$, builtin$
+  # Default: true
+  skip-dirs-use-default: true
+  # Allow multiple parallel golangci-lint instances running.
+  # If false (default) - golangci-lint acquires file lock on start.
+  allow-parallel-runners: false
+
+# output configuration options
+output:
+  # Format: colored-line-number|line-number|json|tab|checkstyle|code-climate|junit-xml|github-actions
+  #
+  # Multiple can be specified by separating them by comma, output can be provided
+  # for each of them by separating format name and path by colon symbol.
+  # Output path can be either `stdout`, `stderr` or path to the file to write to.
+  # Example: "checkstyle:report.json,colored-line-number"
+  #
+  # Default: colored-line-number
+  format: colored-line-number
+  # Print lines of code with issue.
+  # Default: true
+  print-issued-lines: true
+  # Print linter name in the end of issue text.
+  # Default: true
+  print-linter-name: true
+  # Make issues output unique by line.
+  # Default: true
+  uniq-by-line: true
+  # Add a prefix to the output file references.
+  # Default is no prefix.
+  path-prefix: ""
+  # Sort results by: filepath, line and column.
+  sort-results: false
+
+linters-settings:
+  exhaustivestruct:
+    # Struct Patterns is list of expressions to match struct packages and names.
+    # The struct packages have the form `example.com/package.ExampleStruct`.
+    # The matching patterns can use matching syntax from https://pkg.go.dev/path#Match.
+    # If this list is empty, all structs are tested.
+    struct-patterns:
+      - '*.Test'
+      - '*.External'
+  revive:
+    # See https://github.com/mgechev/revive#available-rules for details.
+    ignore-generated-header: true
+    severity: warning
+    rules:
+      - name: indent-error-flow
+        severity: warning
+  tagliatelle:
+    # Check the struck tag name case.
+    case:
+      # Use the struct field name to check the name of the struct tag.
+      # Default: false
+      use-field-name: false
+      rules:
+        # Any struct tag type can be used.
+        # Support string case: `camel`, `pascal`, `kebab`, `snake`, `goCamel`, `goPascal`, `goKebab`, `goSnake`, `upper`, `lower`
+        json: snake
+        yaml: kebab
+  linters-settings:
+    wrapcheck:
+      # An array of strings that specify substrings of signatures to ignore.
+      # If this set, it will override the default set of ignored signatures.
+      # See https://github.com/tomarrell/wrapcheck#configuration for more information.
+      ignoreSigs:
+        - .Errorf(
+        - errors.New(
+        - errors.Unwrap(
+        - .Wrap(
+        - .Wrapf(
+        - .WithMessage(
+        - .WithMessagef(
+        - .WithStack(
+        - .Err(
+        - .Write(
+
+linters:
+  # Disable specific linter
+  # https://golangci-lint.run/usage/linters/#disabled-by-default-linters--e--enable
+  disable:
+    - maligned
+    - lll
+    - gochecknoglobals
+    - whitespace
+    - godox
+    - gomnd
+    - gocognit
+    - funlen
+    - wsl
+    - godot
+    - nestif
+    - testpackage
+    - nlreturn
+    - noctx
+    - exhaustive
+    - sqlclosecheck
+    - gosec
+    - gofumpt
+    - paralleltest
+    - cyclop
+    - interfacer
+    - golint
+    - scopelint
+    - ifshort
+    - dupl
+    - gochecknoinits
+    - gomoddirectives
+    - varnamelen
+    - ireturn
+    - nilnil
+    - contextcheck
+  # Enable all available linters.
+  # Default: false
+  enable-all: true
+  # Run only fast linters from enabled linters set (first run won't be fast)
+  # Default: false
+  fast: false
+
+issues:
+  # List of regexps of issue texts to exclude.
+  #
+  # But independently of this option we use default exclude patterns,
+  # it can be disabled by `exclude-use-default: false`.
+  # To list all excluded by default patterns execute `golangci-lint run --help`
+  #
+  # Default: []
+  exclude:
+    - G104
+    - SA6002
+    - S1000
+    - ST1000
+  # Excluding configuration per-path, per-linter, per-text and per-source
+  exclude-rules:
+    # Exclude some linters from running on tests files.
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - staticcheck
+        - gomnd
+        - funlen
+    # Exclude some `staticcheck` messages.
+    - linters:
+        - staticcheck
+      text: "SA9003:"
+    # Exclude `lll` issues for long lines with `go:generate`.
+    - linters:
+        - lll
+      source: "^//go:generate "
+  # Independently of option `exclude` we use default exclude patterns,
+  # it can be disabled by this option.
+  # To list all excluded by default patterns execute `golangci-lint run --help`.
+  # Default: true.
+  exclude-use-default: false
+  # If set to true exclude and exclude-rules regular expressions become case-sensitive.
+  # Default: false
+  exclude-case-sensitive: false
+  # The list of ids of default excludes to include or disable.
+  # Default: []
+  include:
+    - EXC0002 # disable excluding of issues about comments from golint.
+  # Maximum issues count per one linter.
+  # Set to 0 to disable.
+  # Default: 50
+  max-issues-per-linter: 0
+  # Maximum count of issues with the same text.
+  # Set to 0 to disable.
+  # Default: 3
+  max-same-issues: 0
+  # Show only new issues: if there are unstaged changes or untracked files,
+  # only those changes are analyzed, else only changes in HEAD~ are analyzed.
+  # It's a super-useful option for integration of golangci-lint into existing large codebase.
+  # It's not practical to fix all existing issues at the moment of integration:
+  # much better don't allow issues in new code.
+  #
+  # Default: false.
+  new: false
+
+severity:
+  # Set the default severity for issues.
+  #
+  # If severity rules are defined and the issues do not match or no severity is provided to the rule
+  # this will be the default severity applied.
+  # Severities should match the supported severity names of the selected out format.
+  # - Code climate: https://docs.codeclimate.com/docs/issues#issue-severity
+  # - Checkstyle: https://checkstyle.sourceforge.io/property_types.html#severity
+  # - GitHub: https://help.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-error-message
+  #
+  # Default value is an empty string.
+  default-severity: error
+  # If set to true `severity-rules` regular expressions become case-sensitive.
+  # Default: false
+  case-sensitive: false
+  # When a list of severity rules are provided, severity information will be added to lint issues.
+  # Severity rules have the same filtering capability as exclude rules
+  # except you are allowed to specify one matcher per severity rule.
+  # Only affects out formats that support setting severity information.
+  #
+  # Default: []
+  rules:
+    - linters:
+        - dupl
+      severity: info

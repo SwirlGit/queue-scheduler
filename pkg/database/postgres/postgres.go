@@ -18,7 +18,7 @@ func NewDB(cfg *Config, appName string) (*DB, error) {
 		return nil, errors.Wrap(err, "pgxpool parse config")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	pool, err := pgxpool.ConnectConfig(ctx, poolCfg)

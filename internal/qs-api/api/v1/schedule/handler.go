@@ -50,5 +50,5 @@ func (h *Handler) scheduleJob(c *fiber.Ctx) error {
 		return errors.Wrap(err, "schedule job")
 	}
 
-	return c.JSON(nil)
+	return nil
 }

@@ -6,23 +6,28 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/SwirlGit/queue-scheduler/cmd/qs-api/config"
 	pkgschedule "github.com/SwirlGit/queue-scheduler/internal/pkg/schedule"
 	"github.com/SwirlGit/queue-scheduler/internal/qs-api/api/v1/schedule"
 	"github.com/SwirlGit/queue-scheduler/pkg/database/postgres"
 	"github.com/SwirlGit/queue-scheduler/pkg/fasthttp"
 )
 
-const appName = "qs-api"
+const (
+	appName        = "qs-api"
+	configFilePath = "config.yaml"
+)
 
 func main() {
-	// TODO: init config
-
-	// TODO: init logger
+	cfg, err := config.InitConfig(configFilePath)
+	if err != nil {
+		panic(err)
+	}
 
 	_, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	qsDB, err := postgres.NewDB(&postgres.Config{}, appName)
+	qsDB, err := postgres.NewDB(&cfg.QSDB, appName)
 	if err != nil {
 		panic(err)
 	}

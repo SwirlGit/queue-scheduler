@@ -7,6 +7,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.27.0
 	github.com/jackc/pgx/v4 v4.15.0
 	github.com/pkg/errors v0.9.1
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (

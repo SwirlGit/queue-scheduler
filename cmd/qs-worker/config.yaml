@@ -1,0 +1,5 @@
+qs-db:
+  url: localhost:5432/qs_db
+  username: qs_worker
+  password: qs_worker
+workers-amount: 10

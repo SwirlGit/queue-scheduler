@@ -6,14 +6,14 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/SwirlGit/queue-scheduler/cmd/qs-worker/config"
+	"github.com/SwirlGit/queue-scheduler/cmd/qs-checker/config"
 	pkgschedule "github.com/SwirlGit/queue-scheduler/internal/pkg/schedule"
-	"github.com/SwirlGit/queue-scheduler/internal/qs-worker/schedule"
+	"github.com/SwirlGit/queue-scheduler/internal/qs-checker/checker"
 	"github.com/SwirlGit/queue-scheduler/pkg/database/postgres"
 )
 
 const (
-	appName        = "qs-worker"
+	appName        = "qs-checker"
 	configFilePath = "config.yaml"
 )
 
@@ -32,11 +32,9 @@ func main() {
 	}
 
 	scheduleStorage := pkgschedule.NewStorage(qsDB.Pool())
-	scheduleService := schedule.NewService(scheduleStorage, cfg.CheckDuration)
-	if err = scheduleService.Start(cfg.WorkersAmount); err != nil {
-		panic(err)
-	}
-	defer scheduleService.Stop()
+	checkerService := checker.NewService(scheduleStorage, cfg.CheckDuration)
+	checkerService.Start()
+	defer checkerService.Stop()
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)

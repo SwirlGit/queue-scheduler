@@ -2,6 +2,7 @@ package schedule
 
 import (
 	"context"
+	"time"
 
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgx/v4"
@@ -25,7 +26,7 @@ func NewStorage(pool *pgxpool.Pool) *Storage {
 const getJobForUpdateQuery = `
 	SELECT j.id, j.date_time, j.action, j.state, j.last_heart_beat, q.id, q.queue_id
 	FROM jobs AS j
-	LEFT JOIN queues AS q
+	INNER JOIN queues AS q
 		ON j.ref_queue_id = q.id
 	WHERE j.date_time < $1 AND q.state = 'ready'::QUEUE_STATE
 	LIMIT 1
@@ -60,6 +61,10 @@ func (s *Storage) TakeJobIntoWork(ctx context.Context) (Job, error) {
 
 func (s *Storage) FinishJob(ctx context.Context, job Job) error {
 	return s.updateState(ctx, job.ID, JobStateDone, job.Queue.ID, QueueStateReady)
+}
+
+func (s *Storage) RenewJob(ctx context.Context, job Job) error {
+	return s.updateState(ctx, job.ID, JobStateNew, job.Queue.ID, QueueStateReady)
 }
 
 const updateJobStateQuery = `UPDATE jobs SET state = $1, last_heart_beat = now() WHERE id = $2`
@@ -154,4 +159,19 @@ func (s *Storage) createQueue(ctx context.Context, queueID string) (int64, error
 		return 0, errors.Wrap(err, "pgxscan get")
 	}
 	return 0, errAlreadyExists
+}
+
+const getRunningJobsForTooLongQuery = `
+	SELECT j.id, j.date_time, j.action, j.state, j.last_heart_beat, q.id, q.queue_id
+	FROM jobs AS j
+	INNER JOIN queues AS q
+		ON j.ref_queue_id = q.id
+	WHERE j.last_heart_beat IS NOT NULL AND j.last_heart_beat < $1 AND q.state = 'busy'::QUEUE_STATE`
+
+func (s *Storage) GetRunningJobsForTooLong(ctx context.Context, dateTime time.Time) ([]Job, error) {
+	var jobs []Job
+	if err := pgxscan.Select(ctx, s.pool, &jobs, getRunningJobsForTooLongQuery, dateTime); err != nil {
+		return nil, errors.Wrap(err, "pgxscan select")
+	}
+	return jobs, nil
 }

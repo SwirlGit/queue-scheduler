@@ -1,0 +1,5 @@
+qs-db:
+  url: localhost:5432/qs_db
+  username: qs_checker
+  password: qs_checker
+check-duration: 1m

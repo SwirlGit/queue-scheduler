@@ -9,6 +9,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const defaultCheckDuration = 30 * time.Second
+
 type scheduleStorage interface {
 	TakeJobIntoWork(ctx context.Context) (schedule.Job, error)
 	FinishJob(ctx context.Context, job schedule.Job) error
@@ -17,14 +19,20 @@ type scheduleStorage interface {
 type Service struct {
 	scheduleStorage scheduleStorage
 
+	checkDuration time.Duration
+
 	currentWorkers int
 	doneChan       chan struct{}
 	stopWaitGroup  sync.WaitGroup
 }
 
-func NewService(scheduleStorage scheduleStorage) *Service {
+func NewService(scheduleStorage scheduleStorage, checkDuration time.Duration) *Service {
+	if checkDuration == 0 {
+		checkDuration = defaultCheckDuration
+	}
 	return &Service{
 		scheduleStorage: scheduleStorage,
+		checkDuration:   checkDuration,
 		doneChan:        make(chan struct{}),
 	}
 }
@@ -65,13 +73,15 @@ func (s *Service) Stop() {
 }
 
 func (s *Service) doUntilStop() {
+	ticker := time.NewTicker(s.checkDuration)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-s.doneChan:
 			return
-		default:
+		case <-ticker.C:
 			s.do()
-			time.Sleep(30 * time.Second)
 		}
 	}
 }

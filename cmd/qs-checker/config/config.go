@@ -10,7 +10,6 @@ import (
 
 type Config struct {
 	QSDB          postgres.Config `yaml:"qs-db"`
-	WorkersAmount int
 	CheckDuration time.Duration
 }
 

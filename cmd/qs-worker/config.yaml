@@ -3,3 +3,4 @@ qs-db:
   username: qs_worker
   password: qs_worker
 workers-amount: 10
+check-duration: 30s

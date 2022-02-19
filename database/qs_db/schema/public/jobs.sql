@@ -4,9 +4,9 @@ CREATE TABLE public.jobs
     ref_queue_id    BIGINT      NOT NULL,
     date_time       TIMESTAMPTZ NOT NULL,
     action          VARCHAR     NOT NULL,
-    state           STATE       NOT NULL DEFAULT 'new':: STATE,
+    state           JOB_STATE   NOT NULL DEFAULT 'new':: JOB_STATE,
     last_heart_beat TIMESTAMPTZ,
-    CONSTRAINT fk_query_id FOREIGN KEY (ref_query_id) REFERENCES queries (id)
+    CONSTRAINT fk_queue_id FOREIGN KEY (ref_queue_id) REFERENCES queues (id)
 );
 
-CREATE INDEX idx_date_time_running ON public.jobs (date_time) WHERE state = 'new'::STATE;
+CREATE INDEX idx_date_time_running ON public.jobs (date_time) WHERE state = 'new'::JOB_STATE;

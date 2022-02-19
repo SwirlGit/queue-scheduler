@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 )
 
 var ErrNoAvailableJobs = errors.New("no available jobs")
@@ -22,11 +23,11 @@ func NewStorage(pool *pgxpool.Pool) *Storage {
 }
 
 const getJobForUpdateQuery = `
-	SELECT j.id, q.queue_id, j.date_time, j.action, j.state, j.last_heart_beat
+	SELECT j.id, j.date_time, j.action, j.state, j.last_heart_beat, q.id, q.queue_id
 	FROM jobs AS j
 	LEFT JOIN queues AS q
 		ON j.ref_queue_id = q.id
-	WHERE j.date_time < $1 AND state = 'new'
+	WHERE j.date_time < $1 AND q.state = 'ready'::QUEUE_STATE
 	LIMIT 1
 	FOR UPDATE SKIP LOCKED
 `
@@ -46,7 +47,7 @@ func (s *Storage) TakeJobIntoWork(ctx context.Context) (Job, error) {
 		return Job{}, errors.Wrap(err, "get job for update")
 	}
 
-	if _, err = tx.Exec(ctx, updateJobStateQuery, JobStateRunning, job.ID); err != nil {
+	if err = s.updateStateWithTx(ctx, tx, job.ID, JobStateRunning, job.Queue.ID, QueueStateBusy); err != nil {
 		return Job{}, errors.Wrap(err, "set job into running state")
 	}
 
@@ -57,15 +58,45 @@ func (s *Storage) TakeJobIntoWork(ctx context.Context) (Job, error) {
 	return job, nil
 }
 
-func (s *Storage) FinishJob(ctx context.Context, jobID int64) error {
-	return s.updateJobState(ctx, jobID, JobStateDone)
+func (s *Storage) FinishJob(ctx context.Context, job Job) error {
+	return s.updateState(ctx, job.ID, JobStateDone, job.Queue.ID, QueueStateReady)
 }
 
 const updateJobStateQuery = `UPDATE jobs SET state = $1, last_heart_beat = now() WHERE id = $2`
+const updateQueueStateQuery = `UPDATE queues SET state = $1 WHERE id = $2`
 
-func (s *Storage) updateJobState(ctx context.Context, jobID int64, state JobState) error {
-	_, err := s.pool.Exec(ctx, updateJobStateQuery, state, jobID)
-	return errors.Wrap(err, "exec query")
+func (s *Storage) updateState(ctx context.Context,
+	jobID int64, jobState JobState,
+	queueID int64, queueState QueueState) error {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return errors.Wrap(err, "begin tx")
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	if err = s.updateStateWithTx(ctx, tx, jobID, jobState, queueID, queueState); err != nil {
+		return err
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return errors.Wrap(err, "commit tx")
+	}
+	return nil
+}
+
+func (s *Storage) updateStateWithTx(ctx context.Context, tx pgx.Tx,
+	jobID int64, jobState JobState,
+	queueID int64, queueState QueueState) error {
+	eg, egCtx := errgroup.WithContext(ctx)
+	eg.Go(func() error {
+		_, err := tx.Exec(egCtx, updateJobStateQuery, jobState, jobID)
+		return errors.Wrap(err, "update job state")
+	})
+	eg.Go(func() error {
+		_, err := tx.Exec(egCtx, updateQueueStateQuery, queueState, queueID)
+		return errors.Wrap(err, "update queue state")
+	})
+	return eg.Wait()
 }
 
 const inertJobQuery = `INSERT INTO jobs (ref_queue_id, date_time, action) VALUES ($1, $2, $3)`

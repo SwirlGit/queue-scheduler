@@ -12,9 +12,9 @@ const (
 
 type Job struct {
 	ID            int64      `db:"id"`
-	QueueID       string     `db:"queue_id"`
 	DateTime      time.Time  `db:"date_time"`
 	Action        string     `db:"action"`
 	State         JobState   `db:"state"`
 	LastHeartBeat *time.Time `db:"last_heart_beat"`
+	Queue
 }

@@ -96,7 +96,7 @@ func (s *Storage) updateStateWithTx(ctx context.Context, tx pgx.Tx,
 		_, err := tx.Exec(egCtx, updateQueueStateQuery, queueState, queueID)
 		return errors.Wrap(err, "update queue state")
 	})
-	return eg.Wait()
+	return errors.Wrap(eg.Wait(), "update state")
 }
 
 const inertJobQuery = `INSERT INTO jobs (ref_queue_id, date_time, action) VALUES ($1, $2, $3)`

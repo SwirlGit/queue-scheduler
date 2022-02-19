@@ -21,7 +21,7 @@ func NewService(scheduleStorage scheduleStorage) *Service {
 
 func (s *Service) ScheduleJob(ctx context.Context, job Job) error {
 	return errors.Wrap(s.scheduleStorage.InsertJob(ctx, schedule.Job{
-		QueueID:  job.QueueID,
+		Queue:    schedule.Queue{QueueID: job.QueueID},
 		DateTime: job.DateTime,
 		Action:   job.Action,
 	}), "insert job into storage")

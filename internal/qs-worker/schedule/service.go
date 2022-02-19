@@ -11,7 +11,7 @@ import (
 
 type scheduleStorage interface {
 	TakeJobIntoWork(ctx context.Context) (schedule.Job, error)
-	FinishJob(ctx context.Context, jobID int64) error
+	FinishJob(ctx context.Context, job schedule.Job) error
 }
 
 type Service struct {
@@ -89,7 +89,7 @@ func (s *Service) do() {
 
 	s.doJob(job)
 
-	if err = s.scheduleStorage.FinishJob(ctx, job.ID); err != nil {
+	if err = s.scheduleStorage.FinishJob(ctx, job); err != nil {
 		// TODO; log
 		return
 	}

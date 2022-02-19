@@ -5,7 +5,7 @@ CREATE TABLE public.jobs
     date_time       TIMESTAMPTZ NOT NULL,
     action          VARCHAR     NOT NULL,
     state           STATE       NOT NULL DEFAULT 'new':: STATE,
-    last_heart_beat TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_heart_beat TIMESTAMPTZ,
     CONSTRAINT fk_query_id FOREIGN KEY (ref_query_id) REFERENCES queries (id)
 );
 

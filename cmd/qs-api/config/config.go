@@ -8,6 +8,7 @@ import (
 
 type Config struct {
 	QSDB postgres.Config `yaml:"qs-db"`
+	Port int
 }
 
 func InitConfig(filePath string) (Config, error) {

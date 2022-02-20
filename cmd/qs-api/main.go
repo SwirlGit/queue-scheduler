@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -43,7 +44,7 @@ func main() {
 
 	server := fasthttp.NewServer([]fasthttp.RouteProvider{scheduleHandler})
 	go func() {
-		if err := server.Listen(":9000"); err != nil {
+		if err := server.Listen(fmt.Sprintf(":%d", cfg.Port)); err != nil {
 			logger.Panic("failed to start listen", zap.Error(err))
 		}
 	}()

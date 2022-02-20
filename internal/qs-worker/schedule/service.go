@@ -108,6 +108,6 @@ func (s *Service) do() {
 	}
 }
 
-func (s *Service) doJob(_ schedule.Job) {
-
+func (s *Service) doJob(job schedule.Job) {
+	s.logger.Info("job is done", zap.String("action", job.Action))
 }

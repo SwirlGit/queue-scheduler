@@ -8,10 +8,11 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func UnmarshalYAMLConfigFile(filePath string, out interface{}) error {
+func UnmarshalYAMLConfigFile(filePathEnv string, out interface{}) error {
+	filePath := os.Getenv(filePathEnv)
 	configData, err := os.ReadFile(filepath.Clean(filePath))
 	if err != nil {
-		return errors.Wrap(err, "read file")
+		return errors.Wrapf(err, "read file with file path = %s", filePath)
 	}
 
 	if err = yaml.UnmarshalStrict(configData, out); err != nil {

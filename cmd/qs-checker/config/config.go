@@ -10,7 +10,7 @@ import (
 
 type Config struct {
 	QSDB          postgres.Config `yaml:"qs-db"`
-	CheckDuration time.Duration
+	CheckDuration time.Duration   `yaml:"check-duration"`
 }
 
 func InitConfig(filePath string) (Config, error) {

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/SwirlGit/queue-scheduler/internal/pkg/schedule"
+	"go.uber.org/zap"
 )
 
 const (
@@ -19,16 +20,18 @@ type scheduleStorage interface {
 }
 
 type Service struct {
+	logger          *zap.Logger
 	scheduleStorage scheduleStorage
 	checkDuration   time.Duration
 	doneChan        chan struct{}
 }
 
-func NewService(scheduleStorage scheduleStorage, checkDuration time.Duration) *Service {
+func NewService(logger *zap.Logger, scheduleStorage scheduleStorage, checkDuration time.Duration) *Service {
 	if checkDuration == 0 {
 		checkDuration = defaultCheckDuration
 	}
 	return &Service{
+		logger:          logger,
 		scheduleStorage: scheduleStorage,
 		checkDuration:   checkDuration,
 		doneChan:        make(chan struct{}),
@@ -62,7 +65,7 @@ func (s *Service) do() {
 	dateTime := time.Now().Add(maxRunningDuration)
 	jobs, err := s.scheduleStorage.GetRunningJobsForTooLong(ctx, dateTime)
 	if err != nil {
-		// TODO; log
+		s.logger.Error("failed to get running jobs for too long", zap.Error(err))
 		return
 	}
 
@@ -82,7 +85,7 @@ func (s *Service) do() {
 				<-semaphore
 			}()
 			if err := s.scheduleStorage.RenewJob(ctx, jobs[i]); err != nil {
-				// TODO: log
+				s.logger.Error("failed to renew job", zap.Int64("jobID", jobs[i].ID), zap.Error(err))
 			}
 		}()
 	}

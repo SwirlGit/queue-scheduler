@@ -10,6 +10,8 @@ import (
 	pkgschedule "github.com/SwirlGit/queue-scheduler/internal/pkg/schedule"
 	"github.com/SwirlGit/queue-scheduler/internal/qs-checker/checker"
 	"github.com/SwirlGit/queue-scheduler/pkg/database/postgres"
+	"github.com/SwirlGit/queue-scheduler/pkg/log"
+	"go.uber.org/zap"
 )
 
 const (
@@ -23,16 +25,19 @@ func main() {
 		panic(err)
 	}
 
+	logger := log.NewZap(appName, zap.DebugLevel)
+	defer func() { _ = logger.Sync() }()
+
 	_, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	qsDB, err := postgres.NewDB(&cfg.QSDB, appName)
 	if err != nil {
-		panic(err)
+		logger.Panic("failed to init qs db", zap.Error(err))
 	}
 
 	scheduleStorage := pkgschedule.NewStorage(qsDB.Pool())
-	checkerService := checker.NewService(scheduleStorage, cfg.CheckDuration)
+	checkerService := checker.NewService(logger, scheduleStorage, cfg.CheckDuration)
 	checkerService.Start()
 	defer checkerService.Stop()
 

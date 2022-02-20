@@ -7,6 +7,7 @@ import (
 
 	"github.com/SwirlGit/queue-scheduler/internal/pkg/schedule"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 const defaultCheckDuration = 30 * time.Second
@@ -17,6 +18,7 @@ type scheduleStorage interface {
 }
 
 type Service struct {
+	logger          *zap.Logger
 	scheduleStorage scheduleStorage
 
 	checkDuration time.Duration
@@ -26,11 +28,12 @@ type Service struct {
 	stopWaitGroup  sync.WaitGroup
 }
 
-func NewService(scheduleStorage scheduleStorage, checkDuration time.Duration) *Service {
+func NewService(logger *zap.Logger, scheduleStorage scheduleStorage, checkDuration time.Duration) *Service {
 	if checkDuration == 0 {
 		checkDuration = defaultCheckDuration
 	}
 	return &Service{
+		logger:          logger,
 		scheduleStorage: scheduleStorage,
 		checkDuration:   checkDuration,
 		doneChan:        make(chan struct{}),
@@ -93,14 +96,14 @@ func (s *Service) do() {
 		return
 	}
 	if err != nil {
-		// TODO: log
+		s.logger.Error("failed to take job into work", zap.Error(err))
 		return
 	}
 
 	s.doJob(job)
 
 	if err = s.scheduleStorage.FinishJob(ctx, job); err != nil {
-		// TODO; log
+		s.logger.Error("failed to finish job", zap.Error(err))
 		return
 	}
 }

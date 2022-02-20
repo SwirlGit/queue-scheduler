@@ -11,6 +11,8 @@ import (
 	"github.com/SwirlGit/queue-scheduler/internal/qs-api/api/v1/schedule"
 	"github.com/SwirlGit/queue-scheduler/pkg/database/postgres"
 	"github.com/SwirlGit/queue-scheduler/pkg/fasthttp"
+	"github.com/SwirlGit/queue-scheduler/pkg/log"
+	"go.uber.org/zap"
 )
 
 const (
@@ -24,12 +26,15 @@ func main() {
 		panic(err)
 	}
 
+	logger := log.NewZap(appName, zap.DebugLevel)
+	defer func() { _ = logger.Sync() }()
+
 	_, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	qsDB, err := postgres.NewDB(&cfg.QSDB, appName)
 	if err != nil {
-		panic(err)
+		logger.Panic("failed to init qs db", zap.Error(err))
 	}
 
 	scheduleStorage := pkgschedule.NewStorage(qsDB.Pool())
@@ -39,7 +44,7 @@ func main() {
 	server := fasthttp.NewServer([]fasthttp.RouteProvider{scheduleHandler})
 	go func() {
 		if err := server.Listen(":9000"); err != nil {
-			panic(err)
+			logger.Panic("failed to start listen", zap.Error(err))
 		}
 	}()
 
@@ -51,6 +56,6 @@ func main() {
 	close(stop)
 
 	if err := server.Shutdown(); err != nil {
-		panic(err)
+		logger.Panic("failed to shutdown server", zap.Error(err))
 	}
 }
